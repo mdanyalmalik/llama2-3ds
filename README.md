@@ -1,8 +1,12 @@
-## llama2.c
+## llama2-3ds
 
 <p align="center">
   <img src="assets/llama_cute.jpg" width="300" height="300" alt="Cute Llama">
 </p>
+
+A port of Karpathy's Llama2.c on the Nintendo 3ds. It currently only supports the smallest model (stories260K). To build, you will need devkitARM (simply type make in the root dir). You will get a .3dsx file that you can run on your 3ds/emulator. I will update the repo with more information and features shortly.
+
+Below are the full details of the original repo by Karpathy.
 
 Have you ever wanted to inference a baby [Llama 2](https://ai.meta.com/llama/) model in pure C? No? Well, now you can!
 
