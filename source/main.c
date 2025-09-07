@@ -143,11 +143,8 @@ void memory_map_weights(TransformerWeights *w, Config* p, float* ptr, int shared
     w->wcls = shared_weights ? w->token_embedding_table : ptr;
 }
 
-void read_checkpoint(char* checkpoint, Config* config, TransformerWeights* weights,
-                     int* fd, float** data, ssize_t* file_size) {
-    (void)checkpoint; // ignore the file path
-    (void)fd;         // file descriptor not used
-
+void read_checkpoint(Config* config, TransformerWeights* weights,
+                     float** data, ssize_t* file_size) {
     // make sure the binary is large enough
     if (stories260K_bin_size < sizeof(Config)) {
         fprintf(stderr, "Checkpoint too small\n");
@@ -171,17 +168,14 @@ void read_checkpoint(char* checkpoint, Config* config, TransformerWeights* weigh
     memory_map_weights(weights, config, *data, shared_weights);
 }
 
-void build_transformer(Transformer *t, char* checkpoint_path) {
+void build_transformer(Transformer *t) {
     // read in the Config and the Weights from the checkpoint
-    read_checkpoint(checkpoint_path, &t->config, &t->weights, &t->fd, &t->data, &t->file_size);
+    read_checkpoint(&t->config, &t->weights, &t->data, &t->file_size);
     // allocate the RunState buffers
     malloc_run_state(&t->state, &t->config);
 }
 
 void free_transformer(Transformer* t) {
-    // memory is not mapped anymore; nothing to unmap/close
-    t->data = NULL;
-    t->fd = -1;
     // free the RunState buffers
     free_run_state(&t->state);
 }
@@ -392,9 +386,7 @@ int compare_tokens(const void *a, const void *b) {
     return strcmp(((TokenIndex*)a)->str, ((TokenIndex*)b)->str);
 }
 
-void build_tokenizer(Tokenizer* t, char* tokenizer_path, int vocab_size) {
-    (void)tokenizer_path; // ignore the file path
-
+void build_tokenizer(Tokenizer* t, int vocab_size) {
     // initialize tokenizer
     t->vocab_size = vocab_size;
     t->vocab = (char**)malloc(vocab_size * sizeof(char*));
@@ -940,10 +932,8 @@ int main(int argc, char *argv[]) {
 	printf("START: exit\n\n");
 
 
-    // default parameters
-    char *checkpoint_path = NULL;  // e.g. out/model.bin
-    char *tokenizer_path = "tokenizers.bin";
-    float temperature = 0.0f;   // 0.0 = greedy deterministic. 1.0 = original. don't set higher
+    // parameters
+    float temperature = 1.0f;   // 0.0 = greedy deterministic. 1.0 = original. don't set higher
     float topp = 0.9f;          // top-p in nucleus sampling. 1.0 = off. 0.9 works well, but slower
     int steps = 256;            // number of steps to run for
     char *prompt = NULL;        // prompt string
@@ -959,12 +949,12 @@ int main(int argc, char *argv[]) {
 
     // build the Transformer via the model .bin file
     Transformer transformer;
-    build_transformer(&transformer, checkpoint_path);
+    build_transformer(&transformer);
     if (steps == 0 || steps > transformer.config.seq_len) steps = transformer.config.seq_len; // override to ~max length
 
     // build the Tokenizer via the tokenizer .bin file
     Tokenizer tokenizer;
-    build_tokenizer(&tokenizer, tokenizer_path, transformer.config.vocab_size);
+    build_tokenizer(&tokenizer, transformer.config.vocab_size);
 
     // build the Sampler
     Sampler sampler;
