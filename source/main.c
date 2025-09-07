@@ -929,6 +929,7 @@ int main(int argc, char *argv[]) {
 	printf("Llama2 on 3ds - ported by danyal malik\n");
 	printf("(credit to karpathy for the original)\n");
 	printf("A: enter start string\n");
+    printf("X: clear screen\n");
 	printf("START: exit\n\n");
 
 
@@ -990,6 +991,15 @@ int main(int argc, char *argv[]) {
 			reload = true;
 			button = swkbdInputText(&swkbd, mybuf, sizeof(mybuf));
 		}
+        else if (kDown & KEY_X)
+        {
+            consoleClear();
+            printf("Llama2 on 3ds - ported by danyal malik\n");
+            printf("(credit to karpathy for the original)\n");
+            printf("A: enter start string\n");
+            printf("X: clear screen\n");
+            printf("START: exit\n\n");
+        }
 
 
 		if (didit)
@@ -1006,6 +1016,10 @@ int main(int argc, char *argv[]) {
                     fprintf(stderr, "unknown mode: %s\n", mode);
                     error_usage();
                 }
+
+                printf("\nA: enter start string\n");
+                printf("X: clear screen\n");
+	            printf("START: exit\n\n");
 			} 
 		}
 
