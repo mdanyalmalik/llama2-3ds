@@ -222,7 +222,6 @@ void matmul(float* xout, float* x, float* w, int n, int d) {
     // W (d,n) @ x (n,) -> xout (d,)
     // by far the most amount of time is spent inside this little function
     int i;
-    #pragma omp parallel for private(i)
     for (i = 0; i < d; i++) {
         float val = 0.0f;
         for (int j = 0; j < n; j++) {
@@ -284,7 +283,6 @@ float* forward(Transformer* transformer, int token, int pos) {
 
         // multihead attention. iterate over all heads
         int h;
-        #pragma omp parallel for private(h)
         for (h = 0; h < p->n_heads; h++) {
             // get the query vector for this head
             float* q = s->q + h * head_size;
@@ -832,9 +830,8 @@ void chat(Transformer *transformer, Tokenizer *tokenizer, Sampler *sampler,
 
     // start the main loop
     int8_t user_turn = 1; // user starts
-    int next;        // will store the next token in the sequence
+    int next = -1;       // will store the next token in the sequence
     int token;       // stores the current token to feed into the transformer
-    int prev_token;
     int pos = 0;     // position in the sequence
     while (pos < steps) {
 
@@ -923,9 +920,11 @@ void error_usage() {
 }
 
 int main(int argc, char *argv[]) {
+    // initialise 3ds stuff
     gfxInitDefault();
 	consoleInit(GFX_TOP, NULL);
 
+    // info for users
 	printf("Llama2 on 3ds - ported by danyal malik\n");
 	printf("(credit to karpathy for the original)\n");
 	printf("A: enter start string\n");
@@ -961,6 +960,7 @@ int main(int argc, char *argv[]) {
     Sampler sampler;
     build_sampler(&sampler, transformer.config.vocab_size, temperature, topp, rng_seed);
 
+    // main loop for all the 3ds-specific stuff
     while (aptMainLoop())
 	{
 		hidScanInput();
@@ -976,8 +976,8 @@ int main(int argc, char *argv[]) {
 		static SwkbdLearningData swkbdLearning;
 		SwkbdButton button = SWKBD_BUTTON_NONE;
 		bool didit = false;
-
-		if (kDown & KEY_A)
+        
+		if (kDown & KEY_A) // on screen keyboard
 		{
 			didit = true;
 			swkbdInit(&swkbd, SWKBD_TYPE_NORMAL, 2, -1);
@@ -991,7 +991,7 @@ int main(int argc, char *argv[]) {
 			reload = true;
 			button = swkbdInputText(&swkbd, mybuf, sizeof(mybuf));
 		}
-        else if (kDown & KEY_X)
+        else if (kDown & KEY_X) // clear the screen
         {
             consoleClear();
             printf("Llama2 on 3ds - ported by danyal malik\n");
@@ -1002,7 +1002,7 @@ int main(int argc, char *argv[]) {
         }
 
 
-		if (didit)
+		if (didit) // generate the output
 		{
 			if (button == SWKBD_BUTTON_RIGHT)
 			{
